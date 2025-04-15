@@ -172,3 +172,86 @@ function drawLine(data) {
 }
 
 
+function drawBubble(data) {
+  const svg = d3.select("#bubble").append("svg");
+  const width = 800,
+    height = 500;
+  svg.attr("width", width).attr("height", height);
+
+  const x = d3
+    .scaleLinear()
+    .domain([0, d3.max(data, (d) => +d.population)])
+    .range([50, width - 50]);
+
+  const y = d3
+    .scaleLinear()
+    .domain([0, d3.max(data, (d) => +d.total_cases)])
+    .range([height - 50, 50]);
+
+  const r = d3
+    .scaleSqrt()
+    .domain([0, d3.max(data, (d) => +d.total_cases)])
+    .range([5, 40]);
+
+  svg
+    .selectAll("circle")
+    .data(data)
+    .enter()
+    .append("circle")
+    .attr("cx", (d) => x(+d.population))
+    .attr("cy", (d) => y(+d.total_cases))
+    .attr("r", (d) => r(+d.total_cases))
+    .attr("fill", "#66ccff")
+    .attr("opacity", 0.7)
+    .on("mouseover", (event, d) => {
+      tooltip.transition().style("opacity", 1);
+      tooltip
+        .html(
+          `<strong>${
+            d.location
+          }</strong><br>Total Cases: ${(+d.total_cases).toLocaleString()}`
+        )
+        .style("left", event.pageX + 10 + "px")
+        .style("top", event.pageY - 20 + "px");
+    })
+    .on("mouseout", () => tooltip.transition().style("opacity", 0));
+}
+
+function drawArea(data) {
+  const svg = d3.select("#area").append("svg");
+  const margin = { top: 30, right: 30, bottom: 70, left: 60 };
+  const width = 800 - margin.left - margin.right;
+  const height = 500 - margin.top - margin.bottom;
+  const g = svg
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const x = d3
+    .scalePoint()
+    .domain(data.map((d) => d.location))
+    .range([0, width]);
+
+  const y = d3
+    .scaleLinear()
+    .domain([0, d3.max(data, (d) => +d.total_cases)])
+    .range([height, 0]);
+
+  const area = d3
+    .area()
+    .x((d) => x(d.location))
+    .y0(height)
+    .y1((d) => y(+d.total_cases));
+
+  g.append("path").datum(data).attr("fill", "lightsteelblue").attr("d", area);
+
+  g.append("g")
+    .attr("transform", `translate(0,${height})`)
+    .call(d3.axisBottom(x))
+    .selectAll("text")
+    .attr("transform", "rotate(-45)")
+    .style("text-anchor", "end");
+
+  g.append("g").call(d3.axisLeft(y));
+}
