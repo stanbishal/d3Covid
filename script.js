@@ -28,6 +28,10 @@ d3.csv(csvUrl).then((data) => {
   drawBar(top10);
   drawPie(top10);
   drawLine(top10);
+  drawBubble(top10);
+  drawArea(top10);
+  drawScatter(top10);
+  drawChoropleth(data);
 });
 
 function drawBar(data) {
@@ -171,7 +175,6 @@ function drawLine(data) {
     .on("mouseout", () => tooltip.transition().style("opacity", 0));
 }
 
-
 function drawBubble(data) {
   const svg = d3.select("#bubble").append("svg");
   const width = 800,
@@ -254,4 +257,106 @@ function drawArea(data) {
     .style("text-anchor", "end");
 
   g.append("g").call(d3.axisLeft(y));
+}
+
+function drawScatter(data) {
+  const svg = d3.select("#scatter").append("svg");
+  const width = 800,
+    height = 500;
+  svg.attr("width", width).attr("height", height);
+
+  const x = d3
+    .scaleLinear()
+    .domain([0, d3.max(data, (d) => +d.population)])
+    .range([50, width - 50]);
+
+  const y = d3
+    .scaleLinear()
+    .domain([0, d3.max(data, (d) => +d.total_deaths || 0)])
+    .range([height - 50, 50]);
+
+  svg
+    .selectAll("circle")
+    .data(data)
+    .enter()
+    .append("circle")
+    .attr("cx", (d) => x(+d.population))
+    .attr("cy", (d) => y(+d.total_deaths || 0))
+    .attr("r", 5)
+    .attr("fill", "#ff6666")
+    .on("mouseover", (event, d) => {
+      tooltip.transition().style("opacity", 1);
+      tooltip
+        .html(
+          `${d.location}<br>Deaths: ${(+d.total_deaths || 0).toLocaleString()}`
+        )
+        .style("left", event.pageX + 10 + "px")
+        .style("top", event.pageY - 20 + "px");
+    })
+    .on("mouseout", () => tooltip.transition().style("opacity", 0));
+}
+
+function drawChoropleth(data) {
+  const checkVisibility = setInterval(() => {
+    const mapContainer = document.getElementById("leaflet-map");
+    if (mapContainer.offsetParent !== null) {
+      clearInterval(checkVisibility);
+
+      const map = L.map("leaflet-map").setView([20, 0], 2);
+      window._leafletMap = map;
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 6,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+      }).addTo(map);
+
+      // Static coords + ISO Alpha-2 for flags
+      const countryMarkers = {
+        "United States": { coords: [37.0902, -95.7129], code: "us" },
+        China: { coords: [35.8617, 104.1954], code: "cn" },
+        India: { coords: [20.5937, 78.9629], code: "in" },
+        France: { coords: [46.6034, 1.8883], code: "fr" },
+        Germany: { coords: [51.1657, 10.4515], code: "de" },
+        Brazil: { coords: [-14.235, -51.9253], code: "br" },
+        "South Korea": { coords: [35.9078, 127.7669], code: "kr" },
+        Japan: { coords: [36.2048, 138.2529], code: "jp" },
+        Italy: { coords: [41.8719, 12.5674], code: "it" },
+        "United Kingdom": { coords: [55.3781, -3.436], code: "gb" },
+      };
+
+      const topCountries = data.filter((d) =>
+        Object.keys(countryMarkers).includes(d.location)
+      );
+
+      topCountries.forEach((d) => {
+        const { coords, code } = countryMarkers[d.location];
+
+        const popupContent = `
+          <div style="font-family: 'Inter', sans-serif; font-size: 14px; max-width: 220px;">
+            <h4 style="margin: 0 0 8px;">${d.location}</h4>
+            <div><strong>Cases:</strong> ${(+d.total_cases).toLocaleString()}</div>
+            <div><strong>Deaths:</strong> ${(
+              +d.total_deaths || 0
+            ).toLocaleString()}</div>
+            <div><strong>Population:</strong> ${(+d.population).toLocaleString()}</div>
+          </div>
+        `;
+
+        //  Create a custom flag icon
+        const flagIcon = L.icon({
+          iconUrl: `https://flagcdn.com/w40/${code}.png`,
+          iconSize: [40, 27], // width, height
+          iconAnchor: [20, 13], // center the icon
+          popupAnchor: [0, -10],
+        });
+
+        L.marker(coords, { icon: flagIcon }).bindPopup(popupContent).addTo(map);
+      });
+
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 300);
+    }
+  }, 100);
 }

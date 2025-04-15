@@ -17,6 +17,8 @@
       <button onclick="showChart('line')">Line Chart</button>
       <button onclick="showChart('bubble')">Bubble Chart</button>
       <button onclick="showChart('area')">Area Chart</button>
+      <button onclick="showChart('scatter')">Scatter Plot</button>
+      <button onclick="showChart('choropleth')">Choropleth Map</button>
     </nav>
 
     <div class="tooltip" id="tooltip"></div>
@@ -25,9 +27,14 @@
     <div id="line" class="chart"></div>
     <div id="bubble" class="chart"></div>
     <div id="area" class="chart"></div>
+    <div id="scatter" class="chart"></div>
+    <div id="choropleth" class="chart">
+      <div id="leaflet-map"></div>
+    </div>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/topojson-client@3"></script>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 
     <script src="script.js"></script>
   </body>
